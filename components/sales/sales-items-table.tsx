@@ -8,8 +8,8 @@ import type { SalesItem } from "@/lib/types"
 
 interface SalesItemsTableProps {
   items: SalesItem[]
-  onUpdateItem: (id: string, field: string, value: number) => void
-  onRemoveItem: (id: string) => void
+  onUpdateItem: (_id: string, field: string, value: number) => void
+  onRemoveItem: (_id: string) => void
 }
 
 export default function SalesItemsTable({ items, onUpdateItem, onRemoveItem }: SalesItemsTableProps) {
@@ -28,15 +28,14 @@ export default function SalesItemsTable({ items, onUpdateItem, onRemoveItem }: S
         </TableHeader>
         <TableBody>
           {items.map((item) => (
-            <TableRow key={item.id}>
+            <TableRow key={item._id}>
               <TableCell>{item.serialNo}</TableCell>
               <TableCell className="font-medium">{item.name}</TableCell>
               <TableCell>
                 <Input
                   type="text"
-                  min="1"
                   value={item.quantity}
-                  onChange={(e) => onUpdateItem(item.id, "quantity", Number.parseInt(e.target.value) || 1)}
+                  onChange={(e) => onUpdateItem(item._id, "quantity", parseFloat(e.target.value) || 1)}
                   className="h-8"
                 />
               </TableCell>
@@ -44,15 +43,14 @@ export default function SalesItemsTable({ items, onUpdateItem, onRemoveItem }: S
                 <Input
                   type="text"
                   min="0"
-                  step="0.01"
                   value={item.price}
-                  onChange={(e) => onUpdateItem(item.id, "price", Number.parseFloat(e.target.value) || 0)}
+                  onChange={(e) => onUpdateItem(item._id, "price", parseFloat(e.target.value) || 0)}
                   className="h-8"
                 />
               </TableCell>
-              <TableCell>${item.subtotal.toFixed(2)}</TableCell>
+              <TableCell>{item.subtotal.toFixed(2)}</TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm" onClick={() => onRemoveItem(item.id)}>
+                <Button variant="ghost" size="sm" onClick={() => onRemoveItem(item._id)}>
                   <X className="h-4 w-4" />
                 </Button>
               </TableCell>

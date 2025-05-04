@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
+import type { Product } from "../../lib/types" // Create this type or adjust as needed
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Plus, Search, Edit, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,27 +20,52 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-// import { products } from "@/lib/data"
 import { dairyInventory } from "@/lib/data"
+import axios from "axios"
 
-export default function ProductsSection() {
+const ProductsSection = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [productsList, setProductsList] = useState(dairyInventory)
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [productsList, setProductsList] = useState<Product[]>([])
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
     price: "",
-    description: "",
-    image: "/placeholder.svg?height=300&width=300",
+    unites:"",
+    sellingPrice: "",
+    sellingPriceShopkeeper: "",
+    image: "",
   })
 
-  const filteredProducts = productsList.filter(
-    (dairyInventory) =>
-      dairyInventory.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dairyInventory.category.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const API = process.env.NEXT_PUBLIC_API_URL
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(`${API}/api/V1/products/all`)
+        setProductsList(response.data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
+    fetchProducts()
+  }, [API])
+
+  // Get unique categories from productsList
+  const uniqueCategories = Array.from(
+    new Set(productsList.map((product) => product.category))
+  ).filter(Boolean)
+
+  // Filtering logic
+  const filteredProducts = productsList.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCategory =
+      categoryFilter === "all" || product.category === categoryFilter
+    return matchesSearch && matchesCategory
+  })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -50,26 +76,36 @@ export default function ProductsSection() {
     setNewProduct((prev) => ({ ...prev, category: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const newProductWithId = {
-      ...newProduct,
-      id: (productsList.length + 1).toString(),
-      price: Number.parseFloat(newProduct.price),
-      stock: 10,
-      origin: "Unknown", // Default value for origin
+    try {
+      const payload = {
+        ...newProduct,
+        price: Number.parseFloat(newProduct.price),
+        sellingPrice: Number.parseFloat(newProduct.sellingPrice),
+        unites: newProduct.unites,
+        image: newProduct.image,
+      }
+     const post = await axios.post(`${API}/api/V1/products/register`, payload)
+      console.log("Product registered successfully:", post.data)
+      // Refresh product list after successful registration
+      const response = await axios.get(`${API}/api/V1/products/all`)
+      setProductsList(response.data)
+      setIsDialogOpen(false)
+      setNewProduct({
+        name: "",
+        category: "",
+        price: "",
+        unites: "",
+        sellingPrice: "",
+        sellingPriceShopkeeper: "",
+        image: "",
+      })
+    } catch (error) {
+      console.error("Error registering product:", error)
+      // Optionally show an error message to the user
     }
-
-    setProductsList([...productsList, newProductWithId])
-    setIsDialogOpen(false)
-    setNewProduct({
-      name: "",
-      category: "",
-      price: "",
-      description: "",
-      image: "/placeholder.svg?height=300&width=300",
-    })
   }
 
   return (
@@ -94,23 +130,27 @@ export default function ProductsSection() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select defaultValue="all">
+        <Select
+          value={categoryFilter}
+          onValueChange={setCategoryFilter}
+        >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="dairy">Dairy</SelectItem>
-            <SelectItem value="bakery">Bakery</SelectItem>
-            <SelectItem value="produce">Produce</SelectItem>
-            <SelectItem value="meat">Meat</SelectItem>
+            {uniqueCategories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className="overflow-hidden">
+          <Card key={product._id} className="overflow-hidden">
             <div className="relative aspect-square">
               <Image
                 src={product.image || "/placeholder.svg?height=300&width=300"}
@@ -132,11 +172,11 @@ export default function ProductsSection() {
                 <h3 className="font-semibold truncate">{product.name}</h3>
                 <Badge variant="outline">{product.category}</Badge>
               </div>
-              <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+              {/* <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p> */}
             </CardContent>
             <CardFooter className="p-4 pt-0 flex justify-between items-center">
-              <span className="font-bold">${product.price.toFixed(2)}</span>
-              <span className="text-sm text-muted-foreground">Stock: {product.stock}</span>
+              <span className="font-bold">₹{product.price}</span>
+        
             </CardFooter>
           </Card>
         ))}
@@ -167,10 +207,12 @@ export default function ProductsSection() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dairy">Dairy</SelectItem>
-                    <SelectItem value="bakery">Bakery</SelectItem>
-                    <SelectItem value="produce">Produce</SelectItem>
-                    <SelectItem value="meat">Meat</SelectItem>
+                    <SelectItem value="milk">Milk</SelectItem>
+                    <SelectItem value="curd">Curd</SelectItem>
+                    <SelectItem value="Ice-Crem">Ice-Cream</SelectItem>
+                    <SelectItem value="Juice">Juice</SelectItem>
+                    <SelectItem value="Paneer">Paneer</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -180,23 +222,55 @@ export default function ProductsSection() {
                   id="price"
                   name="price"
                   type="number"
-                  step="0.01"
+                  step="1"
                   min="0"
                   value={newProduct.price}
                   onChange={handleInputChange}
                   required
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={newProduct.description}
+                 <Label htmlFor="price">SellingPrice</Label>
+                <Input
+                  id="sellingPrice"
+                  name="sellingPrice"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={newProduct.sellingPrice}
                   onChange={handleInputChange}
-                  rows={3}
+                  required
+                />
+                <Label htmlFor="price">sellingPriceShopkeeper</Label>
+                <Input
+                  id="sellingPriceShopkeeper"
+                  name="sellingPriceShopkeeper"
+                  type="text"
+                  placeholder="e.g. 1L, 500g"
+                  value={newProduct.sellingPriceShopkeeper}
+                  onChange={handleInputChange}
+                  required
+                />
+                 <Label htmlFor="price">Unites</Label>
+                <Input
+                  id="unites"
+                  name="unites"
+                  type="text"
+                  placeholder="e.g. 1L, 500g"
+                  value={newProduct.unites}
+                  onChange={handleInputChange}
+                  required
+                />
+                
+                <Label htmlFor="price">Image</Label>
+                <Input
+                  id="unites"
+                  name="unites"
+                  type="text"
+                  placeholder="image url"
+                  value={newProduct.image}
+                  onChange={handleInputChange}
                 />
               </div>
+              
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -210,3 +284,5 @@ export default function ProductsSection() {
     </div>
   )
 }
+
+export default ProductsSection;

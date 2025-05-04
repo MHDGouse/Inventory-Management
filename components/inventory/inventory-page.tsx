@@ -8,17 +8,18 @@ import { useRouter } from "next/navigation"
 import InventoryTable from "./inventory-table"
 import SelectedItemsGrid from "./selected-items-grid"
 import { dairyInventory } from "@/lib/data"
-import type { InventoryItem, SelectedItem } from "@/lib/types"
+import type { Product, SelectedItem } from "@/lib/types"
 
 export default function InventoryPage() {
   const router = useRouter()
-  const [inventory, setInventory] = useState<InventoryItem[]>(dairyInventory)
+  const [inventory, setInventory] = useState<Product[]>(dairyInventory)
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
 
   const tableRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
+  const API = process.env.NEXT_PUBLIC_API_URL 
   // Filter inventory based on search query
   const filteredInventory =
     searchQuery.trim() === ""
@@ -26,14 +27,13 @@ export default function InventoryPage() {
       : inventory.filter(
           (item) =>
             item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchQuery.toLowerCase()),
+            item.category.toLowerCase().includes(searchQuery.toLowerCase())
         )
 
   // Handle item selection
-  const handleSelectItem = (item: InventoryItem) => {
+  const handleSelectItem = (item: Product) => {
     // Check if item is already selected
-    if (!selectedItems.some((selected) => selected.id === item.id)) {
+    if (!selectedItems.some((selected) => selected._id === item._id)) {
       setSelectedItems([
         ...selectedItems,
         {
@@ -50,7 +50,7 @@ export default function InventoryPage() {
   const handleUpdateSelectedItem = (id: string, field: string, value: number) => {
     setSelectedItems((prev) =>
       prev.map((item) => {
-        if (item.id === id) {
+        if (item._id === id) {
           const updatedItem = { ...item, [field]: value }
 
           // Calculate total price
@@ -65,7 +65,7 @@ export default function InventoryPage() {
 
   // Remove item from selection
   const handleRemoveItem = (id: string) => {
-    setSelectedItems((prev) => prev.filter((item) => item.id !== id))
+    setSelectedItems((prev) => prev.filter((item) => item._id !== id))
   }
 
   // Calculate grand total
@@ -110,7 +110,7 @@ export default function InventoryPage() {
         {/* Left Panel - Inventory Table */}
         <div ref={tableRef} className="border rounded-lg overflow-hidden">
           <div className="bg-muted p-3 font-medium">Available Inventory</div>
-          <InventoryTable inventory={filteredInventory} onSelectItem={handleSelectItem} />
+          <InventoryTable  onSelectItem={handleSelectItem} />
         </div>
 
         {/* Right Panel - Selected Items Grid */}
@@ -118,7 +118,7 @@ export default function InventoryPage() {
           <div ref={gridRef} className="border rounded-lg overflow-hidden flex-grow">
             <div className="bg-muted p-3 font-medium flex justify-between items-center">
               <span>Selected Items</span>
-              <span>Total: ${grandTotal.toFixed(2)}</span>
+              <span>Total: ₹{grandTotal.toFixed(2)}</span>
             </div>
             <SelectedItemsGrid
               selectedItems={selectedItems}

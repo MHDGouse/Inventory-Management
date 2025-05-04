@@ -1,23 +1,19 @@
-export interface InventoryItem {
-  id: string
+export interface Product {
+  _id: string
   name: string
   category: string
   price: number
-  stock: number
   image: string
-  description: string
-  origin: string
-  allergens?: string
 }
 
-export interface SelectedItem extends InventoryItem {
+export interface SelectedItem extends Product {
   cans?: number
   quantity?: number
   totalPrice?: number
 }
 
 export interface SalesItem {
-  id: string
+  _id: string
   serialNo: number
   name: string
   price: number
@@ -26,7 +22,7 @@ export interface SalesItem {
 }
 
 export interface SalesTransaction {
-  id: string
+  _id: string
   items: SalesItem[]
   status: "pending" | "completed"
   total: number

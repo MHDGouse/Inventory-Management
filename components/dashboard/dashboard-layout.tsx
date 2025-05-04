@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -15,7 +14,9 @@ import {
   ChevronRight,
   Menu,
   User,
+  AlignJustify,
 } from "lucide-react"
+// import { IoMenu } from "react-icons/io5";
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -102,12 +103,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
     >
       <div className="flex h-16 items-center border-b px-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <LayoutDashboard className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center rounded-full hover:bg-gray-400 justify-center text-primary-foreground">
+            <AlignJustify  className="text-black"   onClick={() => setIsCollapsed(!isCollapsed)}/>
           </div>
           {!isCollapsed && <span className="text-lg font-semibold">Dashboard</span>}
-        </Link>
+        </div>
       </div>
       <div className="flex-1 overflow-auto py-4">
         <nav className="grid gap-1 px-2">
@@ -122,16 +123,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             />
           ))}
         </nav>
-      </div>
-      <div className="mt-auto border-t p-4">
-        <Button
-          variant="outline"
-          size="icon"
-          className="w-full h-8 justify-center"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
       </div>
     </div>
   )
