@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { ArrowLeft, Edit, Save } from "lucide-react"
 import type { SelectedItem } from "@/lib/types"
+import axios from "axios"
 
 export default function InventoryItemsPage() {
   const router = useRouter()
@@ -17,14 +18,25 @@ export default function InventoryItemsPage() {
   const [editItem, setEditItem] = useState<SelectedItem | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+  const API = process.env.NEXT_PUBLIC_API_URL
+
   useEffect(() => {
-    // Load inventory items from localStorage
-    const storedItems = localStorage.getItem("inventoryItems")
-    if (storedItems) {
-      setInventoryItems(JSON.parse(storedItems))
+    const fetchData = async () => {
+      try {
+       
+          // Otherwise, fetch from API
+          const inventoryData = await axios.get(`${API}/api/V1/products`)
+          setInventoryItems(inventoryData.data.data)
+          console.log("Fetched inventory items from API:", inventoryData.data)
+        }
+      catch (error) {
+        console.error("Error loading inventory items:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-    setIsLoading(false)
-  }, [])
+    fetchData()
+  }, [API])
 
   const handleEditItem = (item: SelectedItem) => {
     setEditItem({ ...item })
@@ -46,7 +58,7 @@ export default function InventoryItemsPage() {
 
   const handleSaveEdit = () => {
     if (editItem) {
-      const updatedItems = inventoryItems.map((item) => (item.id === editItem.id ? editItem : item))
+      const updatedItems = inventoryItems.map((item) => (item._id === editItem._id ? editItem : item))
       setInventoryItems(updatedItems)
       localStorage.setItem("inventoryItems", JSON.stringify(updatedItems))
       setIsDialogOpen(false)
@@ -94,7 +106,7 @@ export default function InventoryItemsPage() {
           </TableHeader>
           <TableBody>
             {inventoryItems.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow key={item._id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.cans}</TableCell>

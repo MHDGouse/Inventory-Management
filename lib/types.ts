@@ -10,6 +10,7 @@ export interface SelectedItem extends Product {
   cans?: number
   quantity?: number
   totalPrice?: number
+  expiryDate?: Date
 }
 
 export interface SalesItem {

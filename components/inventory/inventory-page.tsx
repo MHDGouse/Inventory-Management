@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Save } from "lucide-react"
@@ -9,6 +9,7 @@ import InventoryTable from "./inventory-table"
 import SelectedItemsGrid from "./selected-items-grid"
 import { dairyInventory } from "@/lib/data"
 import type { Product, SelectedItem } from "@/lib/types"
+import axios from "axios"
 
 export default function InventoryPage() {
   const router = useRouter()
@@ -71,18 +72,27 @@ export default function InventoryPage() {
   // Calculate grand total
   const grandTotal = selectedItems.reduce((total, item) => total + (item.totalPrice || 0), 0)
 
+
   // Save inventory to database and redirect
-  const handleSaveInventory = () => {
-    // Simulate saving to database
-    console.log("Saving inventory:", selectedItems)
-
-    // In a real app, you would make an API call here
-    // For now, we'll just store in localStorage for demo purposes
-    localStorage.setItem("inventoryItems", JSON.stringify(selectedItems))
-
-    // Redirect to inventory items page
-    router.push("/inventory-items")
+  const handleSaveInventory = async () => {
+    try {
+      const payload = selectedItems.map(item => ({
+        id: item._id,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        expiryDate: item.expiryDate,
+      }))
+      console.log("Payload to save:", payload)
+        const response = await axios.post(`${API}/api/V1/inventory/add`, payload)
+        console.log("Inventory saved successfully:", response.data)
+      // Optionally show a success message here
+      router.push("/inventory")
+    } catch (error) {
+      console.error("Error saving inventory:", error)
+      // Optionally show an error message here
+    }
   }
+
 
   return (
     <div className="container mx-auto py-6 px-4">
@@ -133,6 +143,5 @@ export default function InventoryPage() {
         </div>
       </div>
     </div>
-  )
-}
-
+ 
+  )}

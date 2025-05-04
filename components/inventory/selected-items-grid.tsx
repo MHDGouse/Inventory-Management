@@ -82,15 +82,14 @@ export default function SelectedItemsGrid({ selectedItems, onUpdateItem, onRemov
                   </div>
                 </div>
                   <div>
-                    <Label htmlFor={`expiry-${item._id}`} className="pr-2">Expiry Date</Label >
-            <Calendar value={date} onChange={(e:any) => setDate(e.value)} dateFormat="dd/mm/yy" />
-      
-    
-                    {/* <Calendar
+                    <Label htmlFor={`expiry-${item._id}`} className="pr-2">Expiry Date</Label>
+                    <Calendar
                       id={`expiry-${item._id}`}
-                      selected={item.expiryDate ? new Date(item.expiryDate) : undefined}
-                      onSelect={(date) => onUpdateItem(item._id, "expiryDate", date)}
-                    /> */}
+                      value={item.expiryDate ? new Date(item.expiryDate) : null}
+                      onChange={(e: any) => onUpdateItem(item._id, "expiryDate", e.value)}
+                      dateFormat="dd/mm/yy"
+                      className="rounded-lg border-2 border-solid border-black bg-white"
+                    />
                   </div>
                 </div>
                 <div className="mt-4 text-right">
