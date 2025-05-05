@@ -209,7 +209,7 @@ const ProductsSection = () => {
                   <SelectContent>
                     <SelectItem value="milk">Milk</SelectItem>
                     <SelectItem value="curd">Curd</SelectItem>
-                    <SelectItem value="Ice-Crem">Ice-Cream</SelectItem>
+                    <SelectItem value="Ice-Cream">Ice-Cream</SelectItem>
                     <SelectItem value="Juice">Juice</SelectItem>
                     <SelectItem value="Paneer">Paneer</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
