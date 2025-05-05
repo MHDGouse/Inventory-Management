@@ -23,14 +23,15 @@ export default function InventoryItemsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-       
-          // Otherwise, fetch from API
-          const inventoryData = await axios.get(`${API}/api/V1/products`)
-          setInventoryItems(inventoryData.data.data)
-          console.log("Fetched inventory items from API:", inventoryData.data)
+        const inventoryData = await axios.get(`${API}/api/V1/products/all`)
+        setInventoryItems(inventoryData.data)
+        console.log("Fetched inventory items from API:", inventoryData.data)
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("Error loading inventory items:", error.response?.data || error.message)
+        } else {
+          console.error("Error loading inventory items:", error)
         }
-      catch (error) {
-        console.error("Error loading inventory items:", error)
       } finally {
         setIsLoading(false)
       }
@@ -90,7 +91,7 @@ export default function InventoryItemsPage() {
       <div className="border rounded-lg overflow-hidden">
         <div className="bg-muted p-3 font-medium flex justify-between items-center">
           <span>Saved Inventory Items</span>
-          <span>Total Value: ${grandTotal.toFixed(2)}</span>
+          <span>Total Value: ₹{grandTotal.toFixed(2)}</span>
         </div>
         <Table>
           <TableHeader>
@@ -111,8 +112,8 @@ export default function InventoryItemsPage() {
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.cans}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell>${item.price.toFixed(2)}</TableCell>
-                <TableCell>${item.totalPrice?.toFixed(2) || "0.00"}</TableCell>
+                <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                <TableCell>₹{item.totalPrice}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" onClick={() => handleEditItem(item)}>
                     <Edit className="h-4 w-4" />

@@ -38,7 +38,7 @@ const ProductsSection = () => {
     image: "",
   })
 
-  const API = process.env.NEXT_PUBLIC_API_URL
+  const API = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -262,8 +262,8 @@ const ProductsSection = () => {
                 
                 <Label htmlFor="price">Image</Label>
                 <Input
-                  id="unites"
-                  name="unites"
+                  id="image"
+                  name="image"
                   type="text"
                   placeholder="image url"
                   value={newProduct.image}
