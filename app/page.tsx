@@ -169,9 +169,9 @@ export default function Home() {
                 <a href="#" className="block text-gray-700 hover:text-emerald-600 transition-colors font-medium">About</a>
                 <a href="#" className="block text-gray-700 hover:text-emerald-600 transition-colors font-medium">Contact</a>
                 <div className="pt-4 space-y-3">
-                  <Button variant="ghost" className="w-full text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">
+                  <Link href="/dashboard" className="w-full text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">
                     Sign In
-                  </Button>
+                  </Link>
                   <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                     Sign Up
                   </Button>
