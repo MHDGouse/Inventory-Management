@@ -23,7 +23,7 @@ export default function InventoryItemsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const inventoryData = await axios.get(`${API}/api/V1/products/all`)
+        const inventoryData = await axios.get(`${API}/api/V1/inventory`)
         setInventoryItems(inventoryData.data)
         console.log("Fetched inventory items from API:", inventoryData.data)
       } catch (error) {
@@ -78,7 +78,7 @@ export default function InventoryItemsPage() {
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <Button variant="ghost" onClick={() => router.push("/")} className="mr-4">
+          <Button variant="ghost" onClick={() => router.push("/dashboard/inventory")} className="mr-4">
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <h1 className="text-3xl font-bold">Inventory Items</h1>
@@ -100,8 +100,8 @@ export default function InventoryItemsPage() {
               <TableHead>Category</TableHead>
               <TableHead>Cans</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Price</TableHead>
               <TableHead>Total</TableHead>
+              <TableHead>Date & Time</TableHead> {/* New column */}
               <TableHead className="w-[80px]">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -112,14 +112,27 @@ export default function InventoryItemsPage() {
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.cans}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell>₹{item.price.toFixed(2)}</TableCell>
                 <TableCell>₹{item.totalPrice}</TableCell>
+                <TableCell>
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleString("en-IN", {
+                        timeZone: "Asia/Kolkata",
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })
+                    : "N/A"}
+                </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" onClick={() => handleEditItem(item)}>
                     <Edit className="h-4 w-4" />
                   </Button>
                 </TableCell>
               </TableRow>
+
             ))}
             {inventoryItems.length === 0 && (
               <TableRow>
@@ -181,7 +194,7 @@ export default function InventoryItemsPage() {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={editItem.price}
+                  value={editItem.totalPrice}
                   onChange={(e) => handleUpdateField("price", Number.parseFloat(e.target.value) || 0)}
                   className="col-span-3"
                 />

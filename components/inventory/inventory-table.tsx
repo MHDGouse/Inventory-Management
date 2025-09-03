@@ -39,14 +39,14 @@ export default function InventoryTable({ onSelectItem }: InventoryTableProps) {
   }, [API])
 
   return (
-    <div className="overflow-auto max-h-[600px]">
+    <div className="overflow-auto max-h-[600px] text-xl">
       {loading ? (
         <div className="flex justify-center items-center py-10">
           <Loader />
         </div>
       ) : (
         <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
+          <TableHeader className="sticky top-0 bg-background z-10 text-lg">
             <TableRow>
               <TableHead>Item</TableHead>
               <TableHead>Category</TableHead>
@@ -57,7 +57,7 @@ export default function InventoryTable({ onSelectItem }: InventoryTableProps) {
           </TableHeader>
           <TableBody>
             {inventory.map((item) => (
-              <TableRow key={item._id}>
+              <TableRow key={item._id} className="text-lg">
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>₹{item.price}</TableCell>

@@ -1,274 +1,145 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, Plus, X, Save, ArrowLeft } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { dairyInventory } from "@/lib/data"
-import type { Product, SalesTransaction, SalesItem } from "@/lib/types"
-import SalesTable from "./sales-table"
-import SalesItemsTable from "./sales-items-table"
+import { useState, useRef, useEffect } from "react"
+import { ProductGrid } from "@/components/sales/product-grid"
+import { TransactionTabs } from "@/components/sales/transaction-tabs"
+import type { SaleType, Product } from "@/lib/types"
+import axios from "axios"
+import Loader from "@/components/ui/loader"
+import { toast } from "react-toastify"
 
-export default function SalesPage() {
-  const router = useRouter()
-  const [inventory, setInventory] = useState<Product[]>()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [transactions, setTransactions] = useState<SalesTransaction[]>([
-    {_id: "1", items: [], status: "pending", total: 0 },
-  ])
-  const [activeTab, setActiveTab] = useState("1")
+export default function HomePage() {
+  const [saleType, setSaleType] = useState<SaleType>("retail")
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  const transactionTabsRef = useRef<{
+    addToCurrentTab: (productId: string, quantity: number, priceType: "retail" | "wholesale") => void
+  }>(null)
 
+  const API = process.env.NEXT_PUBLIC_API_URL
 
-  // Filter inventory based on search query
-  const filteredInventory =
-    searchQuery.trim() === ""
-      ? inventory
-      : inventory.filter(
-          (item) =>
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.category.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
+  // Load products when component mounts
+  useEffect(() => {
+    loadProducts()
+  }, [])
 
-  // Add a new transaction tab
-  const handleAddTransaction = () => {
-    const newId = (transactions.length + 1).toString()
-    setTransactions([...transactions, {_id: new _id, items: [], status: "pending", total: 0 }])
-    setActiveTab(newId)
-  }
-
-  // Close a transaction tab
-  const handleCloseTransaction = (_id: string) => {
-    if (transactions.length === 1) return // Don't remove the last tab
-
-    const newTransactions = transactions.filter((t) => t._id !== _id)
-    setTransactions(newTransactions)
-
-    // Set active tab to the first one if we're closing the active tab
-    if (activeTab === _id) {
-      setActiveTab(newTransactions[0]._id)
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await axios.get(`${API}/api/V1/products/all`)
+      console.log("Sales API response:", response.data)
+      
+      // Assuming the API returns products in response.data
+      const data = response.data
+      console.log("Fetched products:", data)
+      
+      // Standardize the product data to ensure consistent field naming
+      const standardizedProducts = data.map((product: Product) => {
+        // Make a copy of the product to avoid mutating the original
+        const standardized = { ...product };
+        
+        // Convert naming conventions for price fields
+        if (standardized.retailPrice !== undefined && standardized.retail_price === undefined) {
+          standardized.retail_price = standardized.retailPrice;
+        }
+        if (standardized.wholeSalePrice !== undefined && standardized.wholesale_price === undefined) {
+          standardized.wholesale_price = standardized.wholeSalePrice;
+        }
+        
+        return standardized;
+      });
+      
+      setProducts(standardizedProducts)
+    } catch (error) {
+      console.error("Failed to load products from API:", error)
+      setError("Failed to load products")
+      toast.error("Error fetching products from API!")
+      setProducts([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Add item to transaction
-  const handleAddItem = (transactionId: string, item: InventoryItem) => {
-    setTransactions((prev) =>
-      prev.map((transaction) => {
-        if (transaction._id === transactionId) {
-          // Check if item already exists in transaction
-          const existingItemIndex = transaction.items.findIndex((i) => i._id === item._id)
+  const handleSaleTypeChange = (type: SaleType) => {
+    setSaleType(type)
+  }
 
-          if (existingItemIndex >= 0) {
-            // Update quantity if item exists
-            const updatedItems = [...transaction.items]
-            updatedItems[existingItemIndex] = {
-              ...updatedItems[existingItemIndex],
-              quantity: updatedItems[existingItemIndex].quantity + 1,
-            }
 
-            // Recalculate total
-            const total = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const handleAddToCart = (productId: string, quantity: number, priceType: "retail" | "wholesale") => {
+    console.log("Add to cart:", { productId, quantity, priceType })
+    if (transactionTabsRef.current) {
+      transactionTabsRef.current.addToCurrentTab(productId, quantity, priceType)
+    }
+  }
 
-            return {
-              ...transaction,
-              items: updatedItems,
-              total,
-            }
-          } else {
-            // Add new item
-            const newItem: SalesItem = {
-              _id: item._id,
-              serialNo: transaction.items.length + 1,
-              name: item.name,
-              price: item.price,
-              quantity: 1,
-              subtotal: item.price,
-            }
+  const handleUpdateQuantity = (productId: string, priceType: "retail" | "wholesale", quantity: number) => {
+    // This will be handled by TransactionTabs component
+    console.log("Update quantity:", { productId, priceType, quantity })
+  }
 
-            const updatedItems = [...transaction.items, newItem]
-            const total = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const handleRemoveItem = (productId: string, priceType: "retail" | "wholesale") => {
+    // This will be handled by TransactionTabs component
+    console.log("Remove item:", { productId, priceType })
+  }
 
-            return {
-              ...transaction,
-              items: updatedItems,
-              total,
-            }
-          }
-        }
-        return transaction
-      }),
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader />
+          <div className="mt-4 text-muted-foreground">Loading products...</div>
+        </div>
+      </div>
     )
   }
 
-  // Update item quantity or price
-  const handleUpdateItem = (transactionId: string, itemId: string, field: string, value: number) => {
-    setTransactions((prev) =>
-      prev.map((transaction) => {
-        if (transaction._id === transactionId) {
-          const updatedItems = transaction.items.map((item) => {
-            if (item._id === itemId) {
-              const updatedItem = { ...item, [field]: value }
-
-              // Recalculate subtotal
-              updatedItem.subtotal = updatedItem.price * updatedItem.quantity
-
-              return updatedItem
-            }
-            return item
-          })
-
-          // Recalculate total
-          const total = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-          return {
-            ...transaction,
-            items: updatedItems,
-            total,
-          }
-        }
-        return transaction
-      }),
-    )
-  }
-
-  // Remove item from transaction
-  const handleRemoveItem = (transactionId: string, itemId: string) => {
-    setTransactions((prev) =>
-      prev.map((transaction) => {
-        if (transaction._id === transactionId) {
-          const updatedItems = transaction.items
-            .filter((item) => item._id !== itemId)
-            // Renumber serial numbers
-            .map((item, index) => ({
-              ...item,
-              serialNo: index + 1,
-            }))
-
-          // Recalculate total
-          const total = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-          return {
-            ...transaction,
-            items: updatedItems,
-            total,
-          }
-        }
-        return transaction
-      }),
-    )
-  }
-
-  // Save transaction
-  const handleSaveTransaction = (transactionId: string) => {
-    setTransactions((prev) =>
-      prev.map((transaction) => {
-        if (transaction._id === transactionId) {
-          return {
-            ...transaction,
-            status: "completed",
-          }
-        }
-        return transaction
-      }),
-    )
-
-    // In a real app, you would save to database here
-    console.log(
-      "Transaction saved:",
-      transactions.find((t) => t._id === transactionId),
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-destructive mb-4">Error: {error}</div>
+          <button 
+            onClick={loadProducts}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <Button variant="ghost" onClick={() => router.push("/")} className="mr-4">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
-          </Button>
-          <h1 className="text-3xl font-bold">Sales</h1>
-        </div>
-        <Button variant="outline" onClick={() => router.push("/inventory-items")}>
-          View Inventory
-        </Button>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search items..."
-          className="pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      {/* Split Panel Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Panel - Inventory Table */}
-        <div className="border rounded-lg overflow-hidden">
-          <div className="bg-muted p-3 font-medium">Available Items</div>
-          <SalesTable onAddItem={(item) => handleAddItem(activeTab, item)} />
-        </div>
-
-        {/* Right Panel - Sales Transactions */}
-        <div className="border rounded-lg overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex items-center bg-muted p-2">
-              <TabsList className="flex-1">
-                {transactions.map((transaction) => (
-                  <TabsTrigger key={transaction._id} value={transaction._id} className="flex items-center">
-                    Sale #{transaction._id}
-                    {transactions.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="ml-2 h-5 w-5 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCloseTransaction(transaction._id)
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              <Button variant="ghost" size="sm" onClick={handleAddTransaction} className="ml-2">
-                <Plus className="h-4 w-4" />
-              </Button>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        <div className="grid grid-cols-1 xl:grid-cols-5 lg:grid-cols-3 gap-4 sm:gap-6 h-[calc(100vh-120px)]">
+          {/* Products Section - Takes more space on larger screens */}
+          <div className="xl:col-span-3 lg:col-span-2 order-2 lg:order-1">
+            <div className="h-full">
+              <ProductGrid 
+                products={products}
+                saleType={saleType} 
+                onSaleTypeChange={handleSaleTypeChange} 
+                onAddToCart={handleAddToCart} 
+              />
             </div>
+          </div>
 
-            {transactions.map((transaction) => (
-              <TabsContent key={transaction._id} value={transaction._id} className="m-0">
-                <div className="p-3 bg-muted border-t flex justify-between items-center">
-                  <span>
-                    Status: <span className="font-medium capitalize">{transaction.status}</span>
-                  </span>
-                  <span className="font-medium">Total: ₹{transaction.total.toFixed(2)}</span>
-                </div>
-                <SalesItemsTable
-                  items={transaction.items}
-                  onUpdateItem={(itemId, field, value) => handleUpdateItem(transaction._id, itemId, field, value)}
-                  onRemoveItem={(itemId) => handleRemoveItem(transaction._id, itemId)}
-                />
-                <div className="p-4 border-t">
-                  <Button
-                    className="w-full"
-                    onClick={() => handleSaveTransaction(transaction._id)}
-                    disabled={transaction.items.length === 0 || transaction.status === "completed"}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    {transaction.status === "completed" ? "Saved" : "Save Transaction"}
-                  </Button>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+          {/* Transaction Tabs Section - Fixed width on larger screens */}
+          <div className="xl:col-span-2 lg:col-span-1 order-1 lg:order-2">
+            <div className="h-full">
+              <TransactionTabs
+                products={products}
+                ref={transactionTabsRef}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveItem={handleRemoveItem}
+                onAddToCart={handleAddToCart}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

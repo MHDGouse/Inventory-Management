@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { dairyInventory } from "@/lib/data"
+import { dairyInventory } from "../../lib/database"
 import axios from "axios"
 
 const ProductsSection = () => {
@@ -31,11 +31,12 @@ const ProductsSection = () => {
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
-    price: "",
-    unites:"",
-    sellingPrice: "",
-    sellingPriceShopkeeper: "",
+    costPrice: "",
+    units:"",
+    retailPrice: "",
+    wholeSalePrice: "",
     image: "",
+    barcode: "",
   })
 
   const API = process.env.NEXT_PUBLIC_API_URL;
@@ -82,10 +83,11 @@ const ProductsSection = () => {
     try {
       const payload = {
         ...newProduct,
-        price: Number.parseFloat(newProduct.price),
-        sellingPrice: Number.parseFloat(newProduct.sellingPrice),
-        unites: newProduct.unites,
+        costPrice: Number.parseFloat(newProduct.costPrice),
+        retailPrice: Number.parseFloat(newProduct.retailPrice),
+        units: newProduct.units,
         image: newProduct.image,
+        barcode: newProduct.barcode,
       }
      const post = await axios.post(`${API}/api/V1/products/register`, payload)
       console.log("Product registered successfully:", post.data)
@@ -96,11 +98,12 @@ const ProductsSection = () => {
       setNewProduct({
         name: "",
         category: "",
-        price: "",
-        unites: "",
-        sellingPrice: "",
-        sellingPriceShopkeeper: "",
+        costPrice: "",
+        units: "",
+        retailPrice: "",
+        wholeSalePrice: "",
         image: "",
+        barcode: "",
       })
     } catch (error) {
       console.error("Error registering product:", error)
@@ -175,7 +178,7 @@ const ProductsSection = () => {
               {/* <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p> */}
             </CardContent>
             <CardFooter className="p-4 pt-0 flex justify-between items-center">
-              <span className="font-bold">₹{product.price}</span>
+              <span className="font-bold">₹{product.retailPrice}</span>
         
             </CardFooter>
           </Card>
@@ -201,6 +204,16 @@ const ProductsSection = () => {
                 <Input id="name" name="name" value={newProduct.name} onChange={handleInputChange} required />
               </div>
               <div className="grid gap-2">
+                <Label htmlFor="barcode">Barcode</Label>
+                <Input 
+                  id="barcode" 
+                  name="barcode" 
+                  value={newProduct.barcode} 
+                  onChange={handleInputChange} 
+                  placeholder="Enter product barcode"
+                />
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="category">Category</Label>
                 <Select value={newProduct.category} onValueChange={handleSelectChange} required>
                   <SelectTrigger>
@@ -217,45 +230,46 @@ const ProductsSection = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="price">Price</Label>
+                <Label htmlFor="price">ConstPrice</Label>
                 <Input
                   id="price"
-                  name="price"
+                  name="costPrice"
                   type="number"
-                  step="1"
+                  step="any"
                   min="0"
-                  value={newProduct.price}
+                  value={newProduct.costPrice}
                   onChange={handleInputChange}
                   required
                 />
-                 <Label htmlFor="price">SellingPrice</Label>
+                <Label htmlFor="retailPrice">Retail Price</Label>
                 <Input
-                  id="sellingPrice"
-                  name="sellingPrice"
+                  id="retailPrice"
+                  name="retailPrice"
                   type="number"
-                  step="1"
+                  step="any"
                   min="0"
-                  value={newProduct.sellingPrice}
+                  value={newProduct.retailPrice}
                   onChange={handleInputChange}
                   required
                 />
-                <Label htmlFor="price">sellingPriceShopkeeper</Label>
+                <Label htmlFor="wholeSalePrice">Wholesale Price</Label>
                 <Input
-                  id="sellingPriceShopkeeper"
-                  name="sellingPriceShopkeeper"
+                  id="wholeSalePrice"
+                  name="wholeSalePrice"
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={newProduct.wholeSalePrice}
+                  onChange={handleInputChange}
+                  required
+                />
+                 <Label htmlFor="price">Units</Label>
+                <Input
+                  id="units"
+                  name="units"
                   type="text"
                   placeholder="e.g. 1L, 500g"
-                  value={newProduct.sellingPriceShopkeeper}
-                  onChange={handleInputChange}
-                  required
-                />
-                 <Label htmlFor="price">Unites</Label>
-                <Input
-                  id="unites"
-                  name="unites"
-                  type="text"
-                  placeholder="e.g. 1L, 500g"
-                  value={newProduct.unites}
+                  value={newProduct.units}
                   onChange={handleInputChange}
                   required
                 />

@@ -43,14 +43,14 @@ export default function SelectedItemsGrid({ selectedItems, onUpdateItem, onRemov
                   className="object-cover rounded-md"
                 />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-lg">
                 <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{item.category}</p>
 
               <div className="flex flex-col gap-2">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <Label htmlFor={`cans-${item._id}`}>Cans</Label>
+                    <Label htmlFor={`cans-${item._id}`} className="text-lg">Cans</Label>
                     <Input
                       id={`cans-${item._id}`}
                       type="text"
@@ -60,7 +60,7 @@ export default function SelectedItemsGrid({ selectedItems, onUpdateItem, onRemov
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`quantity-${item._id}`}>Quantity</Label>
+                    <Label htmlFor={`quantity-${item._id}`} className="text-lg">Quantity</Label>
                     <Input
                       id={`quantity-${item._id}`}
                       type="text"
@@ -70,30 +70,20 @@ export default function SelectedItemsGrid({ selectedItems, onUpdateItem, onRemov
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`price-${item._id}`}>Price ($)</Label>
+                    <Label htmlFor={`price-${item._id}`} className="text-lg">Price (₹)</Label>
                     <Input
                       id={`price-${item._id}`}
-                      type="text"
+                      type="text" // <-- change here
                       min="0"
-                      step="0.01"
+                      step="0.01" // <-- add this
                       value={item.price}
                       onChange={(e) => onUpdateItem(item._id, "price", Number.parseFloat(e.target.value) || 0)}
                     />
                   </div>
                 </div>
-                  <div>
-                    <Label htmlFor={`expiry-${item._id}`} className="pr-2">Expiry Date</Label>
-                    <Calendar
-                      id={`expiry-${item._id}`}
-                      value={item.expiryDate ? new Date(item.expiryDate) : null}
-                      onChange={(e: any) => onUpdateItem(item._id, "expiryDate", e.value)}
-                      dateFormat="dd/mm/yy"
-                      className="rounded-lg border-2 border-solid border-black bg-white"
-                    />
-                  </div>
                 </div>
-                <div className="mt-4 text-right">
-                  <p className="font-medium">Total: ₹{item.totalPrice?.toFixed(2) || "0.00"}</p>
+                <div className="mt-4 text-right text-xl">
+                  <p className="font-medium ">Total: ₹{item.totalPrice?.toFixed(2) || "0.00"}</p>
                 </div>
               </div>
             </div>

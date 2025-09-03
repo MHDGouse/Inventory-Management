@@ -42,7 +42,6 @@ export default function SalesTable({ inventory, onAddItem }: SalesTableProps) {
             <TableHead>Item</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Price</TableHead>
-            <TableHead>Stock</TableHead>
             <TableHead className="w-[80px]">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -52,7 +51,6 @@ export default function SalesTable({ inventory, onAddItem }: SalesTableProps) {
               <TableCell className="font-medium">{item.name}</TableCell>
               <TableCell>{item.category}</TableCell>
               <TableCell>₹{item.price.toFixed(2)}</TableCell>
-              <TableCell>{item.stock}</TableCell>
               <TableCell>
                 <Button variant="ghost" size="sm" onClick={() => onAddItem(item)}>
                   <Plus className="h-4 w-4" />

@@ -10,12 +10,15 @@ import SelectedItemsGrid from "./selected-items-grid"
 import { dairyInventory } from "@/lib/data"
 import type { Product, SelectedItem } from "@/lib/types"
 import axios from "axios"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 export default function InventoryPage() {
   const router = useRouter()
   const [inventory, setInventory] = useState<Product[]>(dairyInventory)
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const tableRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -42,6 +45,7 @@ export default function InventoryPage() {
           cans: 0,
           quantity: 0,
           totalPrice: 0,
+          
         },
       ])
     }
@@ -72,32 +76,44 @@ export default function InventoryPage() {
   // Calculate grand total
   const grandTotal = selectedItems.reduce((total, item) => total + (item.totalPrice || 0), 0)
 
-
   // Save inventory to database and redirect
   const handleSaveInventory = async () => {
+    setLoading(true)
     try {
       const payload = selectedItems.map(item => ({
         id: item._id,
+        name: item.name,
+        cans: item.cans,
         quantity: item.quantity,
         totalPrice: item.totalPrice,
-        expiryDate: item.expiryDate,
       }))
       console.log("Payload to save:", payload)
-        const response = await axios.post(`${API}/api/V1/inventory/add`, payload)
-        console.log("Inventory saved successfully:", response.data)
-      // Optionally show a success message here
-      router.push("/inventory")
+      const response = await axios.post(
+        `${API}/api/V1/inventory/add`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+      toast.success("Inventory saved successfully!")
     } catch (error) {
+      toast.error("Error saving inventory!")
       console.error("Error saving inventory:", error)
-      // Optionally show an error message here
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Disable if any item has price 0 or if no items are selected
+  const isSaveDisabled =
+    selectedItems.length === 0 || selectedItems.some(item => !item.totalPrice || item.totalPrice === 0)
 
   return (
-    <div className="container mx-auto py-6 px-4">
+    <div className=" text-xl"> {/* <-- Added text-lg here */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Inventory Management</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Inventory Management</h1>
         <Button variant="outline" onClick={() => router.push("/sales")}>
           Go to Sales
         </Button>
@@ -137,11 +153,29 @@ export default function InventoryPage() {
             />
           </div>
 
-          <Button className="mt-4 w-full" size="lg" onClick={handleSaveInventory} disabled={selectedItems.length === 0}>
-            <Save className="mr-2 h-4 w-4" /> Save Inventory
+          <Button
+            className="mt-4 w-full"
+            size="lg"
+            onClick={handleSaveInventory}
+            disabled={isSaveDisabled || loading}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                Saving...
+              </span>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" /> Save Inventory
+              </>
+            )}
           </Button>
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
  
   )}
