@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { TransactionManager } from "@/components/transaction-manager"
+import { TransactionManager } from "@/components/sales/transaction-manager"
 import { Plus, Minus, Trash2, Save, ShoppingCart } from "lucide-react"
 import type { CartItem, SaleType } from "@/lib/types"
 

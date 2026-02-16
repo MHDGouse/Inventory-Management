@@ -43,6 +43,7 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
     const [nextTabId, setNextTabId] = useState(2)
     const [showReceipt, setShowReceipt] = useState(false)
     const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null)
+    const [returnCash, setReturnCash] = useState<number>(0)
 
     const API = process.env.NEXT_PUBLIC_API_URL
     const currentTabData = tabs.find((tab) => tab.id === activeTab)
@@ -118,9 +119,9 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
         }
         return item;
       });
-      
+
       updateTabCart(activeTab, updatedCart);
-      console.log(`[v0] Updated ${priceType} price for product ${productId} to $${newPrice.toFixed(2)}`);
+      console.log(`[v0] Updated ${priceType} price for product ${productId} to ₹${newPrice.toFixed(2)}`);
     }
 
     const handleClearCart = () => {
@@ -130,18 +131,16 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
     const handleSaveSale = async () => {
       if (!currentTabData || currentTabData.cart.length === 0) return
 
-      const subtotal = currentTabData.cart.reduce((sum, item) => {
+      const total = currentTabData.cart.reduce((sum, item) => {
         const price = item.price_type === "retail" ? item.product.retail_price || 0 : item.product.wholesale_price || 0
         return sum + price * item.quantity
       }, 0)
 
-      const total = subtotal
 
       // Create transaction for receipt display (optional)
       const transaction: any = {
         id: Date.now(),
         items: currentTabData.cart,
-        subtotal,
         total,
         sale_type: currentTabData.saleType,
         status: "completed",
@@ -153,16 +152,16 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
         const retailPrice = item.product.retailPrice || item.product.retail_price || 0;
         const wholesalePrice = item.product.wholeSalePrice || item.product.wholesale_price || 0;
         const price = item.price_type === "retail" ? retailPrice : wholesalePrice;
-        
+
         // Make sure we're passing a valid product ID
         const productId = item.product._id || item.product.id;
-        
+
         console.log("Product being sent to API:", {
           productId,
           name: item.product.name,
           fullProduct: item.product
         });
-        
+
         return {
           productId: productId, // Match the exact field name from backend code
           name: item.product.name,
@@ -179,17 +178,17 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
       try {
         // Log the complete data being sent
         console.log("Sending sale data to API:", JSON.stringify(saleData, null, 2));
-        
+
         // Send data to API as an array
         const response = await axios.post(`${API}/api/V1/sales/add`, saleData);
 
         if (response.status === 200 || response.status === 201) {
           toast.success("Sale successfully recorded!");
-          
+
           // Optional: Show receipt
           setCurrentTransaction(transaction);
           setShowReceipt(true);
-          
+
           // Clear the cart after successful save
           updateTabCart(activeTab, []);
         } else {
@@ -198,7 +197,7 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
       } catch (error) {
         console.error("Error saving sale:", error);
         toast.error("Error saving sale. Please try again.");
-        
+
         // Still show receipt for offline functionality
         setCurrentTransaction(transaction);
         setShowReceipt(true);
@@ -255,22 +254,20 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
       }
 
       updateTabCart(activeTab, updatedCart)
-      console.log("Added to cart:", { 
-        product: product.name, 
-        productId: product._id || product.id, 
-        quantity, 
-        priceType: actualPriceType 
+      console.log("Added to cart:", {
+        product: product.name,
+        productId: product._id || product.id,
+        quantity,
+        priceType: actualPriceType
       })
     }
 
     if (!currentTabData) return null
 
-    const subtotal = currentTabData.cart.reduce((sum, item) => {
+    const total = currentTabData.cart.reduce((sum, item) => {
       const price = item.price_type === "retail" ? item.product.retail_price || 0 : item.product.wholesale_price || 0
       return sum + price * item.quantity
     }, 0)
-
-    const total = subtotal
 
     return (
       <>
@@ -378,8 +375,9 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
                     return (
                       <div
                         key={`cart-item-${index}-${item.product._id || item.product.id || `noId-${index}`}-${item.price_type}`}
-                        className="flex flex-wrap md:flex-nowrap items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors"
+                        className="flex flex-wrap lg:flex-nowrap items-center gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors"
                       >
+
                         <img
                           src={item.product.image || "/placeholder.svg?height=50&width=50"}
                           alt={item.product.name}
@@ -394,8 +392,9 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
                           <div className="flex items-center gap-2 mt-1">
                             <div className="relative group">
                               <span className="text-sm font-semibold text-primary cursor-pointer group-hover:opacity-0">
-                                ${(price || 0).toFixed(2)}
+                                ₹{(price || 0).toFixed(2)}
                               </span>
+
                               <Input
                                 type="number"
                                 defaultValue={(price || 0).toFixed(2)}
@@ -474,7 +473,7 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
                         </div>
 
                         <div className="text-right flex-shrink-0 w-full md:w-auto mt-2 md:mt-0">
-                          <div className="font-semibold text-base">${((price || 0) * item.quantity).toFixed(2)}</div>
+                          <div className="font-semibold text-base">₹{((price || 0) * item.quantity).toFixed(2)}</div>
                         </div>
                       </div>
                     )
@@ -485,17 +484,26 @@ export const TransactionTabs = forwardRef<TransactionTabsRef, TransactionTabsPro
                   <Separator className="mb-4" />
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                 
+
+
                     <Separator />
                     <div className="flex justify-between font-semibold">
                       <span>Total:</span>
-                      <span className="text-primary">${total.toFixed(2)}</span>
+                      <span className="text-primary">₹{total.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={returnCash}
+                        step="1"
+                        min="0"
+                        onChange={(e) => setReturnCash(Number(e.target.value))}
+                        className="mb-2"
+                      />
+                      <span className="text-sm">Return Cash: ₹{(returnCash - total).toFixed(2)}</span>
                     </div>
                   </div>
+
 
                   <div className="flex gap-2 mb-2">
                     <Button

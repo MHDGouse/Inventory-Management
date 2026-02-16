@@ -13,9 +13,9 @@ interface CartItemProps {
 }
 
 export function CartItemComponent({ item, onUpdateQuantity, onRemoveItem }: CartItemProps) {
-  const currentPrice = 
-    item.price_type === "retail" 
-      ? (item.product.retail_price ?? 0) 
+  const currentPrice =
+    item.price_type === "retail"
+      ? (item.product.retail_price ?? 0)
       : (item.product.wholesale_price ?? 0)
   const lineTotal = currentPrice * item.quantity
 

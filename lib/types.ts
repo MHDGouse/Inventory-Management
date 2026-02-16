@@ -22,8 +22,7 @@ export interface Transaction {
   transaction_number: string
   status: "pending" | "completed" | "cancelled"
   sale_type: "retail" | "wholesale"
-  subtotal: number
-  total_amount: number
+  total: number
   created_at: string
   completed_at?: string
   items?: TransactionItem[]

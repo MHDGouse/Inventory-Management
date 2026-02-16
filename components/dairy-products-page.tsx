@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import ProductTable from "./product-table"
 import ProductGrid from "./product-grid"
-import { dairyProducts } from "@/lib/data"
 
 export default function DairyProductsPage() {
   const [products, setProducts] = useState(dairyProducts)

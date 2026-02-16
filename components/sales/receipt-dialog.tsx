@@ -43,7 +43,7 @@ export function ReceiptDialog({ transaction, isOpen, onClose }: ReceiptDialogPro
 
         <Card className="print:shadow-none">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-lg">Dairy Sales System</CardTitle>
+            <CardTitle className="text-lg">ARFAT ENTERPRICES</CardTitle>
             <div className="text-sm text-muted-foreground">Receipt</div>
             <div className="flex items-center justify-center gap-2">
               <Badge variant={transaction.sale_type === "retail" ? "default" : "secondary"}>
@@ -82,18 +82,10 @@ export function ReceiptDialog({ transaction, isOpen, onClose }: ReceiptDialogPro
 
             {/* Totals */}
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal:</span>
-                <span>${(transaction.subtotal || 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Tax:</span>
-                <span>${(transaction.tax_amount || 0).toFixed(2)}</span>
-              </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total:</span>
-                <span className="text-primary">${(transaction.total_amount || 0).toFixed(2)}</span>
+                <span className="text-primary">${(transaction.total || 0).toFixed(2)}</span>
               </div>
             </div>
 
@@ -124,3 +116,6 @@ export function ReceiptDialog({ transaction, isOpen, onClose }: ReceiptDialogPro
     </Dialog>
   )
 }
+
+// Add a default export for easier lazy loading
+export default ReceiptDialog;

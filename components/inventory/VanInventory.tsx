@@ -8,6 +8,7 @@ import { format } from "date-fns"
 import axios from "axios"
 import Loader from "@/components/ui/loader"
 import { toast } from "react-toastify"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface VanItem {
   _id: string
@@ -20,6 +21,7 @@ interface VanItem {
   totalAmount: number
   wholeSalePrice: number
   retailPrice: number
+  unitType: "Can" | "Liters" | "Pieces" // New field for the dropdown selection
 }
 
 interface VanInventoryProps {
@@ -31,12 +33,13 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [focusedInput, setFocusedInput] = useState<string | null>(null)
+  const [returnCash, setReturnCash] = useState<number>(0)
 
   // Constants for calculations
-  const a = 12
-  const b = 60
-  const c = 84
-  const d = 2
+  const a = 12 // products in one can
+  const b = 60 // TM mini in one can
+  const c = 84 // Mini curd in one can
+  const d = 2 // multiplier for 500ml products
 
   const API = process.env.NEXT_PUBLIC_API_URL
 
@@ -53,11 +56,12 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
           units: apiItem.units,
           category: apiItem.category,
           wholeSalePrice: apiItem.wholeSalePrice,
-          retailPrice:apiItem.retailPrice,
+          retailPrice: apiItem.retailPrice,
           quantity: 0, // Initialize quantity
           totalAmount: 0,
           returnQuantity: 0,
-          returnAmount: 0
+          returnAmount: 0,
+              unitType: "Can", // Default to Can for all products
         }))
         
         setVanItems(mappedVanItems)
@@ -78,6 +82,18 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
       prev.map(item => {
         if (item._id === id) {
           return { ...item, [field]: value }
+        }
+        return item
+      })
+    )
+  }
+  
+  // Handle unit type change
+  const handleUnitTypeChange = (id: string, value: "Can" | "Liters" | "Pieces") => {
+    setVanItems(prev => 
+      prev.map(item => {
+        if (item._id === id) {
+          return { ...item, unitType: value }
         }
         return item
       })
@@ -172,32 +188,41 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
     const wholesale = item.wholeSalePrice || 0
     const retailPrice = item.retailPrice ||0
     const quantity = item.quantity || 0
-    const productKey = `${item.name} ${item.units}`
+  const productKey = `${item.name} ${item.units}`
+  const isCanUnit = item.unitType === "Can"
+  const isPieces = item.unitType === "Pieces"
     
-    // console.log(`Calculating quantity amount for ${productKey}:`, { wholesale, quantity, productKey })
-    
-    let result = 0
+  let result = 0
     if (productKey.includes("FCM") && productKey.includes("500ML")) {
-      result = quantity * wholesale * d
+      // FCM is already calculated in liters
+       result = isCanUnit ? a * quantity * wholesale * d : quantity * wholesale * d
     } else if (productKey.includes("FCM") && productKey.includes("1000ML")) {
-      result =  quantity * 72
+      result = quantity * 72
     } else if (productKey.includes("SM") && productKey.includes("500ML")) {
-      result = a * quantity * wholesale * d
-     
+      // Adjust calculation based on unit type
+      result = isCanUnit ? a * quantity * wholesale * d : quantity * wholesale * d
     } else if (productKey.includes("TM") && productKey.includes("500ML") && !productKey.includes("MINI")) {
-      result = a * quantity * wholesale * d
+      result = isCanUnit ? a * quantity * wholesale * d : quantity * wholesale * d
     } else if (productKey.includes("DTM") && productKey.includes("500ML")) {
-      result = a * quantity * wholesale * d
-   
+      result = isCanUnit ? a * quantity * wholesale * d : quantity * wholesale * d
     } else if (productKey.includes("TM MINI") && productKey.includes("160ML")) {
-      result = b * quantity * wholesale
-     
+      if (isPieces) {
+        // 160ml per piece -> convert to liters and charge per-liter wholesale
+        const liters = quantity * 0.16
+        result = liters * wholesale
+      } else {
+        result = isCanUnit ? b * quantity * wholesale : quantity * wholesale
+      }
     } else if (productKey.includes("CURD") && productKey.includes("500ML") && !productKey.includes("MINI")) {
-      result = a * quantity * retailPrice * d
- 
+      result = isCanUnit ? a * quantity * retailPrice * d : quantity * retailPrice * d
     } else if (productKey.includes("CURD MINI") && productKey.includes("110ML")) {
-      result = c * quantity * wholesale
-
+      if (isPieces) {
+        // 110ml per piece -> convert to liters and charge per-liter wholesale
+        const liters = quantity * 0.11
+        result = liters * wholesale
+      } else {
+        result = isCanUnit ? c * quantity * wholesale : quantity * wholesale
+      }
     } else {
       result = quantity * wholesale // default calculation
     }
@@ -210,10 +235,10 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
     const retailPrice = item.retailPrice ||0
     const returnQuantity = item.returnQuantity || 0
     const productKey = `${item.name} ${item.units}`
+    // Return amounts are always calculated in liters
     
-    // console.log(`Calculating return amount for ${productKey}:`, { wholesale, returnQuantity, productKey })
-    
-    let result = 0
+  const isPieces = item.unitType === "Pieces"
+  let result = 0
     if (productKey.includes("FCM") && productKey.includes("500ML")) {
       result = returnQuantity * wholesale * d
     } else if (productKey.includes("FCM") && productKey.includes("1000ML")) {
@@ -225,49 +250,70 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
     } else if (productKey.includes("DTM") && productKey.includes("500ML")) {
       result = returnQuantity * wholesale * d
     } else if (productKey.includes("TM MINI") && productKey.includes("160ML")) {
-      result = returnQuantity * wholesale
+      if (isPieces) {
+        const liters = returnQuantity * 0.16
+        result = liters * wholesale
+      } else {
+        result = returnQuantity * wholesale
+      }
     } else if (productKey.includes("CURD") && productKey.includes("500ML") && !productKey.includes("MINI")) {
       result = returnQuantity * retailPrice * d
     } else if (productKey.includes("CURD MINI") && productKey.includes("110ML")) {
-      result = returnQuantity * wholesale
+      if (isPieces) {
+        const liters = returnQuantity * 0.11
+        result = liters * wholesale
+      } else {
+        result = returnQuantity * wholesale
+      }
     } else {
       result = returnQuantity * wholesale // default calculation
     }
     
-    // console.log(`Return amount result for ${productKey}:`, result)
     return result
   }
 
   const calculateActualSold = (item: VanItem) => {
     const quantity = item.quantity || 0
-    const retailPrice = item.retailPrice ||0
     const returnQuantity = item.returnQuantity || 0
     const productKey = `${item.name} ${item.units}`
+  const isCanUnit = item.unitType === "Can"
+  const isPieces = item.unitType === "Pieces"
     
-    // console.log(`Calculating actual sold for ${productKey}:`, { quantity, returnQuantity, productKey })
-    
-    let result = 0
+  let result = 0
     if (productKey.includes("FCM") && productKey.includes("500ML")) {
+      // FCM is already in liters
       result = quantity - returnQuantity
     } else if (productKey.includes("FCM") && productKey.includes("1000ML")) {
       result = quantity - returnQuantity
     } else if (productKey.includes("SM") && productKey.includes("500ML")) {
-      result = a * quantity - returnQuantity
+      // For cans, convert to liters first
+      result = isCanUnit ? a * quantity - returnQuantity : quantity - returnQuantity
     } else if (productKey.includes("TM") && productKey.includes("500ML") && !productKey.includes("MINI")) {
-      result = a * quantity - returnQuantity
+      result = isCanUnit ? a * quantity - returnQuantity : quantity - returnQuantity
     } else if (productKey.includes("DTM") && productKey.includes("500ML")) {
-      result = a * quantity - returnQuantity
+      result = isCanUnit ? a * quantity - returnQuantity : quantity - returnQuantity
     } else if (productKey.includes("TM MINI") && productKey.includes("160ML")) {
-      result = b * quantity - returnQuantity
+      if (isPieces) {
+        const litersQty = quantity * 0.16
+        const litersReturn = returnQuantity * 0.16
+        result = litersQty - litersReturn
+      } else {
+        result = isCanUnit ? b * quantity - returnQuantity : quantity - returnQuantity
+      }
     } else if (productKey.includes("CURD") && productKey.includes("500ML") && !productKey.includes("MINI")) {
-      result = a * quantity - returnQuantity
+      result = isCanUnit ? a * quantity - returnQuantity : quantity - returnQuantity
     } else if (productKey.includes("CURD MINI") && productKey.includes("110ML")) {
-      result = c * quantity - returnQuantity
+      if (isPieces) {
+        const litersQty = quantity * 0.11
+        const litersReturn = returnQuantity * 0.11
+        result = litersQty - litersReturn
+      } else {
+        result = isCanUnit ? c * quantity - returnQuantity : quantity - returnQuantity
+      }
     } else {
       result = quantity - returnQuantity // default calculation
     }
     
-    // console.log(`Actual sold result for ${productKey}:`, result)
     return result
   }
 
@@ -276,8 +322,6 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
     const retailPrice = item.retailPrice ||0
     const actualSold = calculateActualSold(item)
     const productKey = `${item.name} ${item.units}`
-    
-    // console.log(`Calculating total amount for ${productKey}:`, { wholesale, actualSold, productKey })
     
     let result = 0
     if (productKey.includes("FCM") && productKey.includes("500ML")) {
@@ -300,7 +344,6 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
       result = actualSold * wholesale // default calculation
     }
     
-    // console.log(`Total amount result for ${productKey}:`, result)
     return result
   }
 
@@ -322,7 +365,8 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
           returnAmount: calculateReturnAmount(item),
           totalAmount: calculateTotalAmount(item),
           addedDate: formattedDate,
-          type: "van"
+          type: "van",
+          unitType: item.unitType // Include unitType in the payload
         }))
 
      const response = await axios.post(`${API}/api/V1/inventory/add`, payload, {
@@ -353,7 +397,8 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
                 <TableHead className="font-bold">Product Name</TableHead>
                 <TableHead className="font-bold">Units</TableHead>
                 <TableHead className="font-bold">Category</TableHead>
-                <TableHead className="font-bold">Quantity (Cans)</TableHead>
+                <TableHead className="font-bold">Unit Type</TableHead>
+                <TableHead className="font-bold">Quantity</TableHead>
                 <TableHead className="font-bold">Quantity Amount</TableHead>
                 <TableHead className="font-bold">Return Quantity (Liters)</TableHead>
                 <TableHead className="font-bold">Return Amount</TableHead>
@@ -367,8 +412,22 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
                 .map((item) => (
                   <TableRow key={item._id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.units}</TableCell>
                     <TableCell>{item.category}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={item.unitType}
+                        onValueChange={(value) => handleUnitTypeChange(item._id, value as "Can" | "Liters" | "Pieces")}
+                      >
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue placeholder="Unit Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Can">Can</SelectItem>
+                          <SelectItem value="Liters">Liters</SelectItem>
+                          <SelectItem value="Pieces">Pieces</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       <Input
                         type="number"
@@ -402,6 +461,7 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
                 <TableCell>MILK TOTAL</TableCell>
                 <TableCell>--</TableCell>
                 <TableCell>--</TableCell>
+                <TableCell>--</TableCell>
                 <TableCell>{getVanMilkQuantity()}</TableCell>
                 <TableCell>₹{getVanMilkQuantityAmount()}</TableCell>
                 <TableCell>{getVanMilkReturnQuantity()}</TableCell>
@@ -417,6 +477,21 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.units}</TableCell>
                     <TableCell>{item.category}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={item.unitType}
+                        onValueChange={(value) => handleUnitTypeChange(item._id, value as "Can" | "Liters")}
+                      >
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue placeholder="Unit Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Can">Can</SelectItem>
+                          <SelectItem value="Liters">Liters</SelectItem>
+                          <SelectItem value="Pieces">Pieces</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       <Input
                         type="number"
@@ -450,6 +525,7 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
                 <TableCell>CURD TOTAL</TableCell>
                 <TableCell>--</TableCell>
                 <TableCell>--</TableCell>
+                <TableCell>--</TableCell>
                 <TableCell>{getVanCurdQuantity()}</TableCell>
                 <TableCell>₹{getVanCurdQuantityAmount()}</TableCell>
                 <TableCell>{getVanCurdReturnQuantity()}</TableCell>
@@ -462,6 +538,7 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
                 <TableCell>TOTAL</TableCell>
                 <TableCell>---</TableCell>
                 <TableCell>---</TableCell>
+                <TableCell>---</TableCell>
                 <TableCell>{getVanGrandQuantity()}</TableCell>
                 <TableCell>₹{getVanGrandQuantityAmount()}</TableCell>
                 <TableCell>{getVanGrandReturnQuantity()}</TableCell>
@@ -471,6 +548,24 @@ export default function VanInventory({ selectedDate }: VanInventoryProps) {
             </TableBody>
           </Table>
         )}
+      </div>
+
+      {/* Return Cash input and Net Total */}
+      <div className="flex items-center justify-end gap-4">
+        <label className="flex items-center gap-2">
+          <span className="text-sm">Return Cash:</span>
+          <Input
+            type="number"
+            min="0"
+            value={returnCash}
+            onChange={(e) => setReturnCash(Number(e.target.value) || 0)}
+            className="w-32"
+          />
+        </label>
+        <div className="text-right">
+          <div className="text-sm text-muted-foreground">Net Total</div>
+          <div className="font-bold text-lg">₹{(getVanGrandTotalAmount() - returnCash).toFixed(2)}</div>
+        </div>
       </div>
 
       {/* Save Button */}

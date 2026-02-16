@@ -34,6 +34,7 @@ import { AnalyticsFilters as AnalyticsFiltersComponent } from "@/components/anal
 import { ComparisonMetrics } from "@/components/analytics/comparison-metrics"
 import { ProductComparisonTable } from "@/components/analytics/product-comparison-table"
 import { CategoryComparisonChart } from "@/components/analytics/category-comparison-chart"
+import axios from "axios"
 
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsData | null>(null)
@@ -46,6 +47,8 @@ export default function AnalyticsPage() {
   const [filters, setFilters] = useState<AnalyticsFilters>({})
   const [loading, setLoading] = useState(true)
 
+
+  const API = process.env.NEXT_PUBLIC_API_URL;
   const loadAnalytics = async (currentFilters: AnalyticsFilters = {}) => {
     setLoading(true)
     try {
@@ -85,8 +88,15 @@ export default function AnalyticsPage() {
     }
   }
 
+
   useEffect(() => {
-    loadAnalytics(filters)
+    const fetch = async () => {
+      const fetching = await axios.get(`${API}/api/V1/sales/date/2026-02-16`)
+
+      console.log(fetching)
+      await loadAnalytics(filters)
+    }
+    fetch()
   }, [filters])
 
   const handleFiltersChange = (newFilters: AnalyticsFilters) => {
@@ -227,6 +237,13 @@ export default function AnalyticsPage() {
 
             {/* Main Analytics Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <Card className="xl:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex justify-center Item-center">Todays</CardTitle>
+
+                </CardHeader>
+
+              </Card>
               {/* Top Products */}
               <Card className="xl:col-span-2">
                 <CardHeader>

@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from "react"
 import { ProductGrid } from "@/components/sales/product-grid"
 import { TransactionTabs } from "@/components/sales/transaction-tabs"
+import { Button } from "@/components/ui/button"
+import { BarChart3, History } from "lucide-react"
+import Link from "next/link"
 import type { SaleType, Product } from "@/lib/types"
 import axios from "axios"
 import Loader from "@/components/ui/loader"
@@ -13,7 +16,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   const transactionTabsRef = useRef<{
     addToCurrentTab: (productId: string, quantity: number, priceType: "retail" | "wholesale") => void
   }>(null)
@@ -31,16 +34,16 @@ export default function HomePage() {
       setError(null)
       const response = await axios.get(`${API}/api/V1/products/all`)
       console.log("Sales API response:", response.data)
-      
+
       // Assuming the API returns products in response.data
       const data = response.data
       console.log("Fetched products:", data)
-      
+
       // Standardize the product data to ensure consistent field naming
       const standardizedProducts = data.map((product: Product) => {
         // Make a copy of the product to avoid mutating the original
         const standardized = { ...product };
-        
+
         // Convert naming conventions for price fields
         if (standardized.retailPrice !== undefined && standardized.retail_price === undefined) {
           standardized.retail_price = standardized.retailPrice;
@@ -48,10 +51,10 @@ export default function HomePage() {
         if (standardized.wholeSalePrice !== undefined && standardized.wholesale_price === undefined) {
           standardized.wholesale_price = standardized.wholeSalePrice;
         }
-        
+
         return standardized;
       });
-      
+
       setProducts(standardizedProducts)
     } catch (error) {
       console.error("Failed to load products from API:", error)
@@ -101,7 +104,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="text-destructive mb-4">Error: {error}</div>
-          <button 
+          <button
             onClick={loadProducts}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >
@@ -115,21 +118,34 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-5 lg:grid-cols-3 gap-4 sm:gap-6 h-[calc(100vh-120px)]">
+        <div className="grid grid-cols-1 xl:grid-cols-5 lg:grid-cols-1 gap-4 sm:gap-6 h-[calc(100vh-120px)]">
+
           {/* Products Section - Takes more space on larger screens */}
           <div className="xl:col-span-3 lg:col-span-2 order-2 lg:order-1">
             <div className="h-full">
-              <ProductGrid 
+              <ProductGrid
                 products={products}
-                saleType={saleType} 
-                onSaleTypeChange={handleSaleTypeChange} 
-                onAddToCart={handleAddToCart} 
+                saleType={saleType}
+                onSaleTypeChange={handleSaleTypeChange}
+                onAddToCart={handleAddToCart}
               />
             </div>
           </div>
 
           {/* Transaction Tabs Section - Fixed width on larger screens */}
           <div className="xl:col-span-2 lg:col-span-1 order-1 lg:order-2">
+            <Link href="/dashboard/sales/analytics">
+              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/sales/transactions">
+              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">History</span>
+              </Button>
+            </Link>
             <div className="h-full">
               <TransactionTabs
                 products={products}

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { dairyInventory } from "../../lib/database"
+import { toast } from "react-toastify"
 import axios from "axios"
 
 const ProductsSection = () => {
@@ -28,6 +28,8 @@ const ProductsSection = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [productsList, setProductsList] = useState<Product[]>([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [currentProductId, setCurrentProductId] = useState<string | null>(null)
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
@@ -68,6 +70,37 @@ const ProductsSection = () => {
     return matchesSearch && matchesCategory
   })
 
+  const handleEditProduct = (product: Product) => {
+    setIsEditing(true)
+    setCurrentProductId(product._id || product.id || null)
+    setNewProduct({
+      name: product.name || "",
+      category: product.category || "",
+      costPrice: product.costPrice?.toString() || "",
+      units: product.units || "",
+      retailPrice: product.retailPrice?.toString() || "",
+      wholeSalePrice: product.wholeSalePrice?.toString() || "",
+      image: product.image || "",
+      barcode: product.barcode || "",
+    })
+    setIsDialogOpen(true)
+  }
+
+  const resetForm = () => {
+    setIsEditing(false)
+    setCurrentProductId(null)
+    setNewProduct({
+      name: "",
+      category: "",
+      costPrice: "",
+      units: "",
+      retailPrice: "",
+      wholeSalePrice: "",
+      image: "",
+      barcode: "",
+    })
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setNewProduct((prev) => ({ ...prev, [name]: value }))
@@ -77,14 +110,41 @@ const ProductsSection = () => {
     setNewProduct((prev) => ({ ...prev, category: value }))
   }
 
+  const registerProduct = async (productData: any) => {
+    try {
+      const response = await axios.post(`${API}/api/V1/products/register`, productData);
+      console.log("Product registered successfully:", response.data);
+      toast.success("Product registered successfully!");
+      return response.data;
+    } catch (error) {
+      console.error("Error registering product:", error);
+      toast.error("Failed to register product. Please try again.");
+      throw error;
+    }
+  };
+
+  const updateProduct = async (productId: string, productData: any) => {
+    try {
+      const response = await axios.put(`${API}/api/V1/products/update/${productId}`, productData);
+      console.log("Product updated successfully:", response.data);
+      toast.success("Product updated successfully!");
+      return response.data;
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error("Failed to update product. Please try again.");
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
       const payload = {
         ...newProduct,
         costPrice: Number.parseFloat(newProduct.costPrice),
         retailPrice: Number.parseFloat(newProduct.retailPrice),
+        wholeSalePrice: Number.parseFloat(newProduct.wholeSalePrice),
         units: newProduct.units,
         image: newProduct.image,
         barcode: newProduct.barcode,
@@ -106,8 +166,8 @@ const ProductsSection = () => {
         barcode: "",
       })
     } catch (error) {
-      console.error("Error registering product:", error)
-      // Optionally show an error message to the user
+      // Error handling is done in the respective functions
+      console.error("Form submission failed:", error);
     }
   }
 
@@ -118,7 +178,10 @@ const ProductsSection = () => {
           <h1 className="text-3xl font-bold tracking-tight">Products</h1>
           <p className="text-muted-foreground">Manage your product catalog.</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => {
+          resetForm();
+          setIsDialogOpen(true);
+        }}>
           <Plus className="mr-2 h-4 w-4" /> Register Product
         </Button>
       </div>
@@ -162,7 +225,12 @@ const ProductsSection = () => {
                 className="object-cover"
               />
               <div className="absolute top-2 right-2 flex gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm rounded-full">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 bg-white/80 backdrop-blur-sm rounded-full"
+                  onClick={() => handleEditProduct(product)}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm rounded-full">
@@ -191,13 +259,30 @@ const ProductsSection = () => {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        if (!open) resetForm();
+        setIsDialogOpen(open);
+      }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Register New Product</DialogTitle>
-            <DialogDescription>Fill in the details to add a new product to your catalog.</DialogDescription>
+            <DialogTitle className={isEditing ? "text-amber-600" : ""}>
+              {isEditing ? "Edit Product" : "Register New Product"}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditing 
+                ? "Update the product details in your catalog." 
+                : "Fill in the details to add a new product to your catalog."}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
+            {isEditing && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+                <p className="text-amber-700 text-sm flex items-center">
+                  <Edit className="h-4 w-4 mr-2" />
+                  You are editing an existing product. All fields have been pre-filled.
+                </p>
+              </div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Product Name</Label>
@@ -287,10 +372,15 @@ const ProductsSection = () => {
               
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                resetForm();
+                setIsDialogOpen(false);
+              }}>
                 Cancel
               </Button>
-              <Button type="submit">Save Product</Button>
+              <Button type="submit" className={isEditing ? "bg-amber-600 hover:bg-amber-700" : ""}>
+                {isEditing ? "Update Product" : "Save Product"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

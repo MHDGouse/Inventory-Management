@@ -17,10 +17,10 @@ interface ProductCardProps {
 export function ProductCard({ product, saleType, onAddToCart }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
 
-  const currentPrice = saleType === "retail" 
+  const currentPrice = saleType === "retail"
     ? (product.retail_price || product.retailPrice || 0)
     : (product.wholesale_price || product.wholeSalePrice || 0)
-  const otherPrice = saleType === "retail" 
+  const otherPrice = saleType === "retail"
     ? (product.wholesale_price || product.wholeSalePrice || 0)
     : (product.retail_price || product.retailPrice || 0)
   const stockQuantity = product.stock_quantity || 100 // Default stock if not provided
@@ -67,19 +67,14 @@ export function ProductCard({ product, saleType, onAddToCart }: ProductCardProps
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-1">
-                <span className="text-base font-bold text-primary">${currentPrice.toFixed(2)}</span>
+                <span className="text-base font-bold text-primary">₹{currentPrice.toFixed(2)}</span>
                 <Badge variant={saleType === "retail" ? "default" : "secondary"} className="text-xs px-1">
                   {saleType}
                 </Badge>
               </div>
               <div className="text-xs text-muted-foreground">
-                {saleType === "retail" ? "W" : "R"}: ${otherPrice.toFixed(2)}
+                {saleType === "retail" ? "W" : "R"}: ₹{otherPrice.toFixed(2)}
               </div>
-            </div>
-
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">Stock</div>
-              <div className="text-sm font-medium">{stockQuantity}</div>
             </div>
           </div>
 

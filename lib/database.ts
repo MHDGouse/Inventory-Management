@@ -3,7 +3,7 @@ import type { Product, Transaction, TransactionItem, CartItem } from "./types"
 // Mock database functions - replace with actual database calls
 export const mockProducts: Product[] = [
   {
-    _id:"1",
+    _id: "1",
     name: "Whole Milk 1L",
 
     barcode: "1234567890123",
